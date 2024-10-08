@@ -1,6 +1,8 @@
 package org.example.expert.domain.user.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.example.expert.domain.common.dto.AuthUser;
@@ -18,19 +20,26 @@ public class User extends Timestamped {
     @Column(unique = true)
     private String email;
     private String password;
+    private String nickname;
     @Enumerated(EnumType.STRING)
     private UserRole userRole;
 
-    public User(String email, String password, UserRole userRole) {
+    public User(String email, String password, String nickname, UserRole userRole) {
         this.email = email;
         this.password = password;
+        this.nickname = nickname;
         this.userRole = userRole;
+
     }
 
-    private User(Long id, String email, UserRole userRole) {
+    public User(Long id, String email, UserRole userRole) {
         this.id = id;
         this.email = email;
         this.userRole = userRole;
+    }
+
+    public User(@NotBlank @Email String email, String encodedPassword, UserRole userRole) {
+        super();
     }
 
     public static User fromAuthUser(AuthUser authUser) {
