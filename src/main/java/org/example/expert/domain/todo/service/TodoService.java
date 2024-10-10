@@ -17,6 +17,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -29,16 +32,19 @@ public class TodoService {
     public TodoSaveResponse saveTodo(AuthUser authUser, TodoSaveRequest todoSaveRequest) {
         User user = User.fromAuthUser(authUser);
 
+        // 날씨 정보 가져오기
         String weather = weatherClient.getTodayWeather();
 
+        // 새로운 Todo 객체 생성
         Todo newTodo = new Todo(
                 todoSaveRequest.getTitle(),
                 todoSaveRequest.getContents(),
                 weather,
                 user
         );
+        // Todo 저장
         Todo savedTodo = todoRepository.save(newTodo);
-
+        // 저장된 Todo에 대한 응답 생성
         return new TodoSaveResponse(
                 savedTodo.getId(),
                 savedTodo.getTitle(),
@@ -48,11 +54,18 @@ public class TodoService {
         );
     }
 
-    public Page<TodoResponse> getTodos(int page, int size) {
+    public Page<TodoResponse> getTodos(int page, int size, String weather, LocalDateTime startDate, LocalDateTime endDate) {
         Pageable pageable = PageRequest.of(page - 1, size);
+        Page<Todo> todos;
+        if (weather == null || weather.isEmpty()) {
+            todos = todoRepository.findAllByOrderByModifiedAtDesc(pageable);
+        }else {
+            todos = todoRepository.findAllByWeather(weather, pageable);
+        }
 
-        Page<Todo> todos = todoRepository.findAllByOrderByModifiedAtDesc(pageable);
-
+        if (startDate !=null || endDate != null) {
+            todos = todoRepository.findSchedulesBetweenDates(pageable,startDate,endDate);
+        }
         return todos.map(todo -> new TodoResponse(
                 todo.getId(),
                 todo.getTitle(),
